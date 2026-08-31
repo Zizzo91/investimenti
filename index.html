@@ -924,8 +924,12 @@ function renderCharts(){
     if(history.length>1){
         const hl=history.map(h=>new Date(h.date).toLocaleDateString('it-IT',{day:'2-digit',month:'short'}));
         const hv=history.map(h=>h.totalValue);
+        const hi=history.map(h=>h.totalInvested!=null?h.totalInvested:null);
+        const hasInvested=hi.some(v=>v!=null);
         if(chartHistory) chartHistory.destroy();
-        chartHistory=new Chart(document.getElementById('chartHistory'),{ type:'line', data:{labels:hl,datasets:[{label:'Valore totale',data:hv,borderColor:'#1a6dd8',backgroundColor:'rgba(26,109,216,.1)',fill:true,tension:.3,pointRadius:4}]}, options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:textColor}},y:{ticks:{color:textColor,callback:v=>'€'+v.toLocaleString('it-IT')},grid:{color:gridColor}}}} });
+        const datasets=[{label:'Valore totale',data:hv,borderColor:'#1a6dd8',backgroundColor:'rgba(26,109,216,.1)',fill:true,tension:.3,pointRadius:4}];
+        if(hasInvested) datasets.push({label:'Investito',data:hi,borderColor:'#10b981',backgroundColor:'rgba(16,185,129,.08)',fill:false,tension:.3,pointRadius:3,borderDash:[6,4],spanGaps:true});
+        chartHistory=new Chart(document.getElementById('chartHistory'),{ type:'line', data:{labels:hl,datasets}, options:{responsive:true,plugins:{legend:{display:hasInvested,labels:{color:textColor,font:{size:11},usePointStyle:true}}},scales:{x:{ticks:{color:textColor}},y:{ticks:{color:textColor,callback:v=>'€'+v.toLocaleString('it-IT')},grid:{color:gridColor}}}} });
     } else { if(chartHistory) chartHistory.destroy(); }
     if(!pensions.length) return;
     const pl=pensions.map(p=>p.name),pc=pensions.map((_,i)=>`hsl(${(i*120+190)%360},60%,52%)`);
@@ -1303,10 +1307,14 @@ async function loadStateFromCloud(){
 }
 
 // Aggiunge lo snapshot giornaliero alla history se non è già presente per oggi
+// Dalla versione "storico investito" salva anche totalInvested (somma investimenti.invested)
 function ensureDailyHistory(){
-    const tv=investments.reduce((s,i)=>s+i.current,0),today=new Date().toISOString().split('T')[0];
+    const tv=investments.reduce((s,i)=>s+i.current,0);
+    const ti=investments.reduce((s,i)=>s+(parseFloat(i.invested)||0),0);
+    const today=new Date().toISOString().split('T')[0];
     const lastSnap=history.length?history[history.length-1].date.split('T')[0]:null;
-    if(lastSnap!==today){ history.push({date:new Date().toISOString(),totalValue:parseFloat(tv.toFixed(2))}); if(history.length>365)history.shift(); }
+    if(lastSnap!==today){ history.push({date:new Date().toISOString(),totalValue:parseFloat(tv.toFixed(2)),totalInvested:parseFloat(ti.toFixed(2))}); if(history.length>365)history.shift(); }
+    else if(history.length && history[history.length-1].totalInvested==null){ history[history.length-1].totalInvested=parseFloat(ti.toFixed(2)); }
 }
 
 // Sincronizza la riga `state` su Supabase (upsert). Fire-and-forget con toast solo su errore.
