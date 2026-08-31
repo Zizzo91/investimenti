@@ -198,6 +198,10 @@ tr:hover { background:#f0f7ff; }
 .history-log-entry:last-child { border-bottom:none; }
 .btn-log { background:#e0f0ff; color:#1a6dd8; border:none; border-radius:5px; padding:2px 8px; font-size:11px; cursor:pointer; margin-left:4px; }
 .btn-log:hover { background:#bfdbfe; }
+.eye-btn { background:transparent; border:none; cursor:pointer; font-size:13px; padding:0 2px; margin-left:2px; vertical-align:middle; opacity:.7; }
+.eye-btn:hover { opacity:1; transform:scale(1.15); }
+.auto-status { display:inline-block; background:#eef7ee; color:#15803d; border-radius:5px; padding:1px 6px; font-size:11px; margin-left:4px; }
+[data-theme="dark"] .auto-status { background:#13301a; color:#86efac; }
 
 .token-banner { background:#fff7ed; border:2px solid #f59e0b; border-radius:10px; padding:14px 18px; margin-bottom:20px; display:flex; align-items:center; gap:12px; font-size:13px; }
 .token-banner button { padding:6px 14px; font-size:13px; background:#f59e0b; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; }
@@ -758,13 +762,22 @@ function renderInvestments(){
             <button class="btn-cancel action-btn" onclick="deleteItem('investimenti',${idx})">Elimina</button>
             ${hasLog}
           </td>`;
+        // OCCHIO: alterna invested attuale / valore prima dell'ultimo incremento
+        const eyeIdx=(eyeState['investimenti::'+idx]===true)?true:false;
+        const hasIncrement=inv.lastIncrement&&inv.lastIncrement.value!==undefined;
+        const investedShown=(eyeIdx&&hasIncrement)?inv.lastIncrement.value:inv.invested;
+        const investedCell=`<td data-label="Investito">${fmt(investedShown)}${(IS_READONLY||!hasIncrement)?'':` <button class="eye-btn" onclick="toggleInvestedEye('investimenti',${idx})" title="${eyeIdx?'Mostra importo attuale':'Mostra valore prima dell\'ultimo incremento'}">👁</button>`}</td>`;
+        // BADGE auto-update: intervallo + prossima scadenza
+        const auArr=(inv.autoUpdates&&inv.autoUpdates.length)?inv.autoUpdates:(inv.autoUpdate?[inv.autoUpdate]:[]);
+        const activeAu=auArr.filter(a=>a&&a.enabled);
+        const auBadge=activeAu.length?`<span class="auto-status" title="Aggiornamento automatico">${activeAu.map(intervalLabel).join(' · ')}</span>`:'';
         tbody.innerHTML+=`<tr data-inv-idx="${idx}">
           ${dragHandle}
-          <td data-label="App/Sito">${inv.name}${isLoss?'<span class="badge-loss">📉 perdita</span>':''}${lm}${noteHtml}</td>
+          <td data-label="App/Sito">${inv.name}${isLoss?'<span class="badge-loss">📉 perdita</span>':''}${auBadge}${lm}${noteHtml}</td>
           <td data-label="Categoria"><span class="badge-cat">${cat}</span></td>
-          <td data-label="Investito">${fmt(inv.invested)}</td>
+          ${investedCell}
           <td data-label="Valore Attuale">${fmt(inv.current)}</td>
-          <td data-label="Guadagno/Perdita">${gainHtml(gain,inv.invested)}</td>
+          <td data-label="Guadagno/Perdita">${gainHtml(gain,investedShown)}</td>
           <td data-label="Obiettivo">${targetCell}</td>
           ${azioniCell}</tr>`;
       });
@@ -810,12 +823,19 @@ function renderPensions(){
             <button class="btn-cancel action-btn" onclick="deleteItem('pensione',${i})">Elimina</button>
             ${hasLog}
           </td>`;
+        const eyeIdx=(eyeState['pensione::'+i]===true)?true:false;
+        const hasIncrement=pen.lastIncrement&&pen.lastIncrement.value!==undefined;
+        const investedShown=(eyeIdx&&hasIncrement)?pen.lastIncrement.value:pen.invested;
+        const investedCell=`<td data-label="Versato">${fmt(investedShown)}${(IS_READONLY||!hasIncrement)?'':` <button class="eye-btn" onclick="toggleInvestedEye('pensione',${i})" title="${eyeIdx?'Mostra importo attuale':'Mostra valore prima dell\'ultimo incremento'}">👁</button>`}</td>`;
+        const auArr=(pen.autoUpdates&&pen.autoUpdates.length)?pen.autoUpdates:(pen.autoUpdate?[pen.autoUpdate]:[]);
+        const activeAu=auArr.filter(a=>a&&a.enabled);
+        const auBadge=activeAu.length?`<span class="auto-status" title="Aggiornamento automatico">${activeAu.map(intervalLabel).join(' · ')}</span>`:'';
         tbody.innerHTML+=`<tr data-pen-idx="${i}">
           ${dragHandle}
-          <td data-label="Fondo">${pen.name}${lm}${noteHtml}</td>
-          <td data-label="Versato">${fmt(pen.invested)}</td>
+          <td data-label="Fondo">${pen.name}${auBadge}${lm}${noteHtml}</td>
+          ${investedCell}
           <td data-label="Valore Attuale">${fmt(pen.current)}</td>
-          <td data-label="Guadagno/Perdita">${gainHtml(gain,pen.invested)}</td>
+          <td data-label="Guadagno/Perdita">${gainHtml(gain,investedShown)}</td>
           <td data-label="Versato Azienda">${fmt(company)}</td>
           <td data-label="Guadagno Totale">${gainHtml(gain+company,null)}</td>
           ${azioniCell}</tr>`;
@@ -1150,8 +1170,7 @@ function applyAutoUpdates(){
                     const start=new Date(au.startDate+'T00:00:00');
                     if(now<start) return;
                     au.lastApplied=start.toISOString();
-                    item.invested=parseFloat((item.invested+au.amount).toFixed(2));
-                    item.lastModified=new Date().toISOString();
+                    recordIncrement(item,au,au.amount);
                     changes.push({name:item.name,added:au.amount});
                 } else {
                     au.lastApplied=now.toISOString();
@@ -1177,14 +1196,46 @@ function applyAutoUpdates(){
             }
             if(count>0){
                 const added=parseFloat((count*au.amount).toFixed(2));
-                item.invested=parseFloat((item.invested+added).toFixed(2));
-                item.lastModified=new Date().toISOString();
-                au.lastApplied=cur.toISOString();
+                recordIncrement(item,au,added);
                 changes.push({name:item.name,added});
             }
         });
     });
     return changes;
+}
+
+// Registra l'ultimo incremento applicato (per la vista "occhio": prima vs dopo)
+function recordIncrement(item,au,added){
+    item.invested=parseFloat((item.invested+added).toFixed(2));
+    item.lastModified=new Date().toISOString();
+    au.lastApplied=new Date().toISOString();
+    item.lastIncrement={ value:Math.round((item.invested-added)*100)/100, added:Math.round(added*100)/100, at:new Date().toISOString() };
+}
+
+// Data della prossima scadenza di un auto-update (dopo lastApplied)
+function nextDueDate(au){
+    if(!au||!au.enabled||!au.lastApplied) return null;
+    const nxt=new Date(au.lastApplied);
+    if(au.intervalUnit==='day') nxt.setDate(nxt.getDate()+au.intervalValue);
+    else if(au.intervalUnit==='week') nxt.setDate(nxt.getDate()+au.intervalValue*7);
+    else if(au.intervalUnit==='month') nxt.setMonth(nxt.getMonth()+au.intervalValue);
+    return nxt;
+}
+
+function intervalLabel(au){
+    const v=au.intervalValue||1;
+    const map={day:v===1?'giorno':v+' giorni',week:v===1?'settimana':v+' settimane',month:v===1?'mese':v+' mesi'};
+    return '🔄 '+map[au.intervalUnit||'month']+' · prox '+fmtDate(nextDueDate(au));
+}
+
+// Stati toggle occhio per l'investito: chiave memoria per riga
+const eyeState={};
+
+function toggleInvestedEye(kind,idx){
+    const key=kind+'::'+idx;
+    eyeState[key]=!eyeState[key];
+    if(kind==='investimenti'){ renderInvestments(); return; }
+    if(kind==='pensione'){ renderPensions(); return; }
 }
 
 function checkAndApplyAutoUpdates(){
