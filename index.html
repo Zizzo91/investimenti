@@ -618,7 +618,7 @@ function getSupabaseSdk(){
     if(supabaseSdk) return supabaseSdk;
     if(!supabaseConfig || !window.supabase || !window.supabase.createClient) return null;
     supabaseSdk = window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey, {
-        auth:{ persistSession:true, autoRefreshToken:true, flowType:'pkce' }
+        auth:{ persistSession:false, autoRefreshToken:true, flowType:'pkce' }
     });
     return supabaseSdk;
 }
@@ -629,14 +629,6 @@ async function getSessionFromStorage(){
         const { data } = await sdk.auth.getSession();
         return data.session || null;
     }catch(e){ return null; }
-}
-async function checkAuthorized(){
-    const sdk = getSupabaseSdk();
-    try{
-        const { data, error } = await sdk.auth.getUser();
-        if(error || !data || !data.user) return false;
-        return true;
-    }catch(e){ return false; }
 }
 
 let investments=[],pensions=[],history=[],sortState={};
@@ -1417,22 +1409,6 @@ async function logout(){
 }
 
 // ── SESSIONE / GATING ──────────────────────────────────────────────────────────
-async function checkInitialAuth(){
-    try{ localStorage.removeItem('github_investimenti_token'); }catch(e){}
-    const sdk=getSupabaseSdk();
-    if(!sdk){
-        showLoginError('Config Supabase mancante.');
-        return applyAuthUI();
-    }
-    const { data } = await sdk.auth.getSession();
-    if(data && data.session){
-        const ok = await checkAuthorized();
-        if(ok) return applyAuthUI();
-        try{ await sdk.auth.signOut(); }catch(e){}
-    }
-    return applyAuthUI();
-}
-
 async function applyAuthUI(){
     const sdk=getSupabaseSdk();
     const authed = sdk ? !!(await getSessionFromStorage()) : false;
@@ -1453,7 +1429,7 @@ async function startApp(){
 // Avvio
 function exportData(){ const data={investments,pensions,history,lastUpdate:new Date().toISOString()}; const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`backup-investimenti-${new Date().toISOString().split('T')[0]}.json`; a.click(); showToast('💾 Backup scaricato!','info'); }
 
-initCalculators(); document.getElementById('addPacBtn').onclick=addPacEntry; applyLayout(); applyCollapseState(); initSortable(); checkInitialAuth().then(authed=>{ if(authed) startApp(); });
+initCalculators(); document.getElementById('addPacBtn').onclick=addPacEntry; applyLayout(); applyCollapseState(); initSortable();
 
 if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
 </script>

@@ -29,7 +29,7 @@ investimenti-main/
 - **PIN 6 cifre**: il PIN è la PASSWORD dell'account Supabase (`config/supabase-config.js → pinEmail`). Il codice non contiene mai il PIN: vive solo su Supabase (hashed), mai in repo, non clonabile.
 - Primo accesso su un dispositivo: se l'utente non esiste ancora viene creato (`signUp`); con "Conferma email" attiva serve cliccare la mail di conferma una volta, poi reinserire lo stesso PIN.
 - Se appare "email rate limit exceeded" → NON riprovare: attendere ~1 ora (quota oraria) e riprovare con lo stesso PIN.
-- **Sessione persistente**: dopo il login il dispositivo resta autorizzato (localStorage `sb-<ref>-auth-token`, refresh automatico) → niente PIN nelle aperture successive. Button "🚪 Esci" nella topbar per l'uscita.
+- **PIN ad ogni accesso**: la sessione NON è persistita (`auth.persistSession:false`) e non ci sono auto-login all'avvio. Ad ogni apertura (anche su un dispositivo già usato) viene richiesto il PIN; i dati si caricano solo dopo il login. Button "🚪 Esci" nella topbar per l'uscita.
 - Senza sessione valida l'app **non carica né renderizza** alcun dato cloud (schermata di login a schermo intero); il server rifiuta comunque le richieste anon (RLS).
 
 ## Database (Supabase, progetto `gfglazxhxxplhoteaahr`, schema `investimenti`)
