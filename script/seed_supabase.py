@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Carica i dati locali (investimenti.json) nella tabella `state` su Supabase.
+"""Carica i dati locali (investimenti.json) nella tabella `state` su Supabase
+(schema `investimenti`).
 
 Uso (usa la service_role key SOLO qui, mai nel frontend):
   python3 script/seed_supabase.py path/to/supabase-secrets-investimenti.json
@@ -21,12 +22,15 @@ import urllib.request
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def request(method, url, key, body=None, prefer=None):
+def request(method, url, key, body=None, prefer=None, profile=None):
     headers = {
         "apikey": key,
         "Authorization": f"Bearer {key}",
         "Content-Type": "application/json",
     }
+    if profile:
+        headers["Accept-Profile"] = profile
+        headers["Content-Profile"] = profile
     if prefer:
         headers["Prefer"] = prefer
     data = json.dumps(body).encode("utf-8") if body is not None else None
@@ -78,7 +82,7 @@ def main():
     print(f"user_id     : {user_id}")
 
     if args.skip_existing:
-        _, existing = request("GET", f"{svc_url}/rest/v1/state?user_id=eq.{user_id}&select=user_id", key)
+        _, existing = request("GET", f"{svc_url}/rest/v1/state?user_id=eq.{user_id}&select=user_id", key, profile="investimenti")
         if existing:
             print("Riga state già presente: --skip-existing, nessuna sovrascrittura.")
             return
@@ -90,7 +94,7 @@ def main():
         "history": history,
         "last_update": last_update,
     }
-    status, _ = request("POST", f"{svc_url}/rest/v1/state", key, [row], prefer="resolution=merge-duplicates,return=minimal")
+    status, _ = request("POST", f"{svc_url}/rest/v1/state", key, [row], prefer="resolution=merge-duplicates,return=minimal", profile="investimenti")
     print(f"seed {status} -> riga state upsertata.")
 
 

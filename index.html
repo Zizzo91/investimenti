@@ -1290,6 +1290,7 @@ async function loadStateFromCloud(){
     const { data:{ user } } = await sdk.auth.getUser();
     if(!user) return false;
     const { data, error } = await sdk
+        .schema('investimenti')
         .from('state')
         .select('investments,pensions,history,last_update')
         .eq('user_id', user.id)
@@ -1333,7 +1334,7 @@ async function syncStateToCloud(){
         last_update: new Date().toISOString(),
         updated_at: new Date().toISOString()
     };
-    const { error } = await sdk.from('state').upsert(row, { onConflict:'user_id' });
+    const { error } = await sdk.schema('investimenti').from('state').upsert(row, { onConflict:'user_id' });
     if(error){
         if(/rate limit|troppi tentativi/i.test(error.message||'')){
             showToast('⚠️ Limite momentaneo Supabase: riprova tra circa un\'ora.','warning',7000);
