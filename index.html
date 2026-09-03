@@ -136,7 +136,18 @@ h1 { color:#1e3a5f; margin-bottom:10px; text-align:center; }
 .collapse-btn:hover { background:#e2e8f0; }
 [data-theme="dark"] .collapse-btn { border-color:#475569; color:#94a3b8; }
 [data-theme="dark"] .collapse-btn:hover { background:#334155; }
-.widget-body { padding:20px; }
+.widget-body { padding:20px; overflow-x:auto; }
+.table-wrap { overflow-x:auto; }
+
+/* — Colonne ridimensionabili — */
+table.resizable { table-layout:fixed; }
+table.resizable th { position:relative; }
+.col-resizer { position:absolute; right:0; top:0; bottom:0; width:8px; cursor:col-resize; user-select:none; z-index:1; }
+.col-resizer:hover, .col-resizer.dragging { background:rgba(26,109,216,.25); }
+@media(max-width:640px){ .col-resizer{ display:none; } table.resizable{ table-layout:auto; } }
+/* cella Azioni flessibile: allargando la colonna i bottoni vanno affiancati */
+td[data-label="Azioni"]{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+@media(max-width:640px){ td[data-label="Azioni"]{ display:flex; justify-content:flex-end; } }
 
 .charts-row { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
 .charts-row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; }
@@ -246,6 +257,36 @@ button { padding:11px 22px; border:none; border-radius:8px; font-size:15px; font
 .btn-reset-layout { background:#6b7280; color:white; padding:7px 14px; font-size:13px; border-radius:6px; }
 .btn-reset-layout:hover { background:#4b5563; }
 .action-btn { padding:5px 10px; font-size:12px; margin-right:4px; }
+
+/* — CTA Azioni Figma: Modifica / Elimina / Log — */
+.btn-edit{
+  background:#E2EEFD; color:#1A6DD8; border:1px solid #CBD5E1;
+  border-radius:8px; height:32px; padding:0 12px;
+  font-size:13px; font-weight:600; display:inline-flex; align-items:center; justify-content:center;
+  white-space:nowrap;
+}
+.btn-edit:hover{ background:#D4E4FC; color:#1149A0; }
+.btn-delete{
+  background:#FEE2E2; color:#991B1B; border:1px solid #FECACA;
+  border-radius:8px; height:32px; padding:0 12px;
+  font-size:13px; font-weight:600; display:inline-flex; align-items:center; justify-content:center;
+  white-space:nowrap;
+}
+.btn-delete:hover{ background:#FECACA; color:#7F1D1D; }
+.btn-log-circle{
+  background:#E2EEFD; color:#1A6DD8; border:1px solid #CBD5E1;
+  width:32px; height:32px; border-radius:50%;
+  display:inline-flex; align-items:center; justify-content:center;
+  padding:0; font-size:14px; line-height:1; flex-shrink:0;
+}
+.btn-log-circle:hover{ background:#D4E4FC; }
+[data-theme="dark"] .btn-edit{ background:#1E3A5F; color:#93C5FD; border-color:#334155; }
+[data-theme="dark"] .btn-edit:hover{ background:#243A5A; }
+[data-theme="dark"] .btn-delete{ background:#450A0A; color:#FCA5A5; border-color:#7F1D1D; }
+[data-theme="dark"] .btn-delete:hover{ background:#5B1212; }
+[data-theme="dark"] .btn-log-circle{ background:#1E293B; color:#93C5FD; border-color:#334155; }
+[data-theme="dark"] .btn-log-circle:hover{ background:#243A5A; }
+
 .loading { opacity:.7; pointer-events:none; cursor:wait; }
 
 .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,.5); z-index:1000; justify-content:center; align-items:center; }
@@ -468,7 +509,7 @@ button { padding:11px 22px; border:none; border-radius:8px; font-size:15px; font
                     </div>
                 </div>
                 <div class="widget-body">
-                    <table id="tableInv">
+                    <table id="tableInv" class="resizable">
                         <thead><tr>
                             <th style="width:30px"></th>
                             <th onclick="sortTable('investimenti','name')">App/Sito <span class="sort-icon" id="sort-inv-name"></span></th>
@@ -496,7 +537,7 @@ button { padding:11px 22px; border:none; border-radius:8px; font-size:15px; font
                     </div>
                 </div>
                 <div class="widget-body">
-                    <table id="tablePen">
+                    <table id="tablePen" class="resizable">
                         <thead><tr>
                             <th style="width:30px"></th>
                             <th onclick="sortTable('pensione','name')">Fondo <span class="sort-icon" id="sort-pen-name"></span></th>
@@ -741,11 +782,11 @@ function renderInvestments(){
         const lm=inv.lastModified?`<span class="last-modified">✏️ ${fmtDate(inv.lastModified)}</span>`:'';
         const noteHtml=inv.note?`<span class="note-text" title="${inv.note}">💬 ${inv.note}</span>`:'';
         const idx=investments.indexOf(inv);
-        const hasLog=(inv.valueLog&&inv.valueLog.length>0)?`<button class="btn-log" onclick="openLog(event,'investimenti',${idx})">📜 ${inv.valueLog.length}</button>`:'';
+        const hasLog=(inv.valueLog&&inv.valueLog.length>0)?`<button class="btn-log-circle" title="Storico ${inv.valueLog.length} modifiche" onclick="openLog(event,'investimenti',${idx})">↻</button>`:'';
         const dragHandle=IS_READONLY?'':'<td data-label=""><span class="row-drag-handle" title="Trascina per riordinare">⠿</span></td>';
         const azioniCell=IS_READONLY?'':`<td data-label="Azioni">
-            <button class="btn-primary action-btn" onclick="editItem('investimenti',${idx})">Modifica</button>
-            <button class="btn-cancel action-btn" onclick="deleteItem('investimenti',${idx})">Elimina</button>
+            <button class="btn-edit" onclick="editItem('investimenti',${idx})">Modifica</button>
+            <button class="btn-delete" onclick="deleteItem('investimenti',${idx})">Elimina</button>
             ${hasLog}
           </td>`;
         // OCCHIO: alterna invested attuale / valore prima dell'ultimo incremento
@@ -801,11 +842,11 @@ function renderPensions(){
         const gain=pen.current-pen.invested,company=pen.company||0;
         const lm=pen.lastModified?`<span class="last-modified">✏️ ${fmtDate(pen.lastModified)}</span>`:'';
         const noteHtml=pen.note?`<span class="note-text" title="${pen.note}">💬 ${pen.note}</span>`:'';
-        const hasLog=(pen.valueLog&&pen.valueLog.length>0)?`<button class="btn-log" onclick="openLog(event,'pensione',${i})">📜 ${pen.valueLog.length}</button>`:'';
+        const hasLog=(pen.valueLog&&pen.valueLog.length>0)?`<button class="btn-log-circle" title="Storico ${pen.valueLog.length} modifiche" onclick="openLog(event,'pensione',${i})">↻</button>`:'';
         const dragHandle=IS_READONLY?'':'<td data-label=""><span class="row-drag-handle" title="Trascina per riordinare">⠿</span></td>';
         const azioniCell=IS_READONLY?'':`<td data-label="Azioni">
-            <button class="btn-primary action-btn" onclick="editItem('pensione',${i})">Modifica</button>
-            <button class="btn-cancel action-btn" onclick="deleteItem('pensione',${i})">Elimina</button>
+            <button class="btn-edit" onclick="editItem('pensione',${i})">Modifica</button>
+            <button class="btn-delete" onclick="deleteItem('pensione',${i})">Elimina</button>
             ${hasLog}
           </td>`;
         const eyeIdx=(eyeState['pensione::'+i]===true)?true:false;
@@ -1127,8 +1168,80 @@ function applyCollapseState(){ const saved=localStorage.getItem(COLLAPSE_KEY); i
 
 function saveLayout(){ const o=[...document.querySelectorAll('#widgets-area .widget')].map(w=>w.dataset.id); localStorage.setItem(LAYOUT_KEY,JSON.stringify(o)); }
 function applyLayout(){ const saved=localStorage.getItem(LAYOUT_KEY); if(!saved)return; const o=JSON.parse(saved),area=document.getElementById('widgets-area'); o.forEach(id=>{ const el=area.querySelector(`[data-id="${id}"]`); if(el)area.appendChild(el); }); }
-function resetLayout(){ localStorage.removeItem(LAYOUT_KEY); localStorage.removeItem(COLLAPSE_KEY); const area=document.getElementById('widgets-area'); DEFAULT_ORDER.forEach(id=>{ const el=area.querySelector(`[data-id="${id}"]`); if(el){ el.classList.remove('collapsed'); area.appendChild(el); } }); document.querySelectorAll('.collapse-btn').forEach(b=>b.textContent='▲'); showToast('🔄 Layout ripristinato','info'); renderAll(); }
+function resetLayout(){ localStorage.removeItem(LAYOUT_KEY); localStorage.removeItem(COLLAPSE_KEY); clearColWidths(); const area=document.getElementById('widgets-area'); DEFAULT_ORDER.forEach(id=>{ const el=area.querySelector(`[data-id="${id}"]`); if(el){ el.classList.remove('collapsed'); area.appendChild(el); } }); document.querySelectorAll('.collapse-btn').forEach(b=>b.textContent='▲'); showToast('🔄 Layout ripristinato','info'); renderAll(); }
 function initSortable(){ Sortable.create(document.getElementById('widgets-area'),{ handle:'.widget-header',animation:200,ghostClass:'sortable-ghost',chosenClass:'sortable-chosen',dragClass:'sortable-drag',onEnd:()=>{ saveLayout(); renderCharts(); } }); }
+
+// ── COLONNE RIDIMENSIONABILI ──────────────────────────────────────────────
+const COL_WIDTH_KEY_INV='investimenti_col_widths_tableInv', COL_WIDTH_KEY_PEN='investimenti_col_widths_tablePen';
+function initColResize(tableId, storageKey){
+  const table=document.getElementById(tableId);
+  if(!table) return;
+  const ths=[...table.querySelectorAll('thead th')];
+  // applica larghezze salvate
+  try{
+    const saved=JSON.parse(localStorage.getItem(storageKey)||'null');
+    if(Array.isArray(saved)){
+      saved.forEach((w,i)=>{ if(ths[i]&&w) ths[i].style.width=w+'px'; });
+    }
+  }catch(e){}
+  ths.forEach((th,i)=>{
+    if(i===ths.length-1) return; // ultima colonna (Azioni) non serve resizer destro
+    const res=document.createElement('span');
+    res.className='col-resizer';
+    res.title='Trascina per ridimensionare';
+    th.appendChild(res);
+    let startX, startW, moved=false;
+    const onMouseMove=(e)=>{
+      const dx=(e.touches?e.touches[0].clientX:e.clientX)-startX;
+      if(Math.abs(dx)>2) moved=true;
+      const newW=Math.max(60, startW+dx);
+      th.style.width=newW+'px';
+      // anti-scroll selezione
+      e.preventDefault();
+    };
+    const onMouseUp=()=>{
+      res.classList.remove('dragging');
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      document.removeEventListener('touchmove', onMouseMove);
+      document.removeEventListener('touchend', onMouseUp);
+      document.body.style.cursor='';
+      document.body.style.userSelect='';
+      // salva
+      const widths=ths.map(t=>Math.round(t.getBoundingClientRect().width));
+      localStorage.setItem(storageKey, JSON.stringify(widths));
+      if(moved){
+        // previeni click sort subito dopo drag
+        setTimeout(()=>moved=false,300);
+        const clickHandler=(ev)=>{ ev.stopPropagation(); th.removeEventListener('click', clickHandler, true); };
+        th.addEventListener('click', clickHandler, true);
+      }
+    };
+    const onStart=(e)=>{
+      if(window.innerWidth<=640) return;
+      startX=e.touches?e.touches[0].clientX:e.clientX;
+      startW=th.getBoundingClientRect().width;
+      moved=false;
+      res.classList.add('dragging');
+      document.body.style.cursor='col-resize';
+      document.body.style.userSelect='none';
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+      document.addEventListener('touchmove', onMouseMove, {passive:false});
+      document.addEventListener('touchend', onMouseUp);
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    res.addEventListener('mousedown', onStart);
+    res.addEventListener('touchstart', onStart, {passive:false});
+  });
+}
+function applyColResizeAll(){ initColResize('tableInv', COL_WIDTH_KEY_INV); initColResize('tablePen', COL_WIDTH_KEY_PEN); }
+function clearColWidths(){
+  localStorage.removeItem(COL_WIDTH_KEY_INV);
+  localStorage.removeItem(COL_WIDTH_KEY_PEN);
+  document.querySelectorAll('table.resizable thead th').forEach(th=>th.style.width='');
+}
 
 function openModal(type){
     if(IS_READONLY) return;
@@ -1457,7 +1570,7 @@ async function startApp(){
 // Avvio
 function exportData(){ const data={investments,pensions,history,lastUpdate:new Date().toISOString()}; const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`backup-investimenti-${new Date().toISOString().split('T')[0]}.json`; a.click(); showToast('💾 Backup scaricato!','info'); }
 
-initCalculators(); document.getElementById('addPacBtn').onclick=addPacEntry; applyLayout(); applyCollapseState(); initSortable();
+initCalculators(); document.getElementById('addPacBtn').onclick=addPacEntry; applyLayout(); applyCollapseState(); initSortable(); applyColResizeAll();
 
 if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
 
