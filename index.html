@@ -476,7 +476,6 @@ button { padding:11px 22px; border:none; border-radius:8px; font-size:15px; font
                             <th onclick="sortTable('investimenti','invested')">Investito <span class="sort-icon" id="sort-inv-invested"></span></th>
                             <th onclick="sortTable('investimenti','current')">Valore Attuale <span class="sort-icon" id="sort-inv-current"></span></th>
                             <th onclick="sortTable('investimenti','gain')">Guadagno/Perdita <span class="sort-icon" id="sort-inv-gain"></span></th>
-                            <th onclick="sortTable('investimenti','target')">Obiettivo <span class="sort-icon" id="sort-inv-target"></span></th>
                             <th id="thAzioniInv">Azioni</th>
                         </tr></thead>
                         <tbody id="investmentsBody"></tbody>
@@ -562,7 +561,6 @@ button { padding:11px 22px; border:none; border-radius:8px; font-size:15px; font
                     <option value="Obiettivo">Obiettivo</option>
                 </select>
             </div>
-            <div class="form-group" id="targetGroup"><label>Obiettivo (€) <small style="color:#999">opzionale</small></label><input type="number" id="target" step="0.01" min="0" placeholder="es. 500"></div>
             <div class="form-group" id="companyGroup" style="display:none"><label>Versato da Azienda (€)</label><input type="number" id="company" step="0.01" value="0"></div>
             <div class="form-group"><label>Note <small style="color:#999">opzionale</small></label><textarea id="noteInput" placeholder="es. acquistato durante il crollo di marzo..."></textarea></div>
             <div class="form-group auto-separator">
@@ -740,10 +738,6 @@ function renderInvestments(){
       .filter(inv=>!sf||inv.name.toLowerCase().includes(sf))
       .forEach(inv=>{
         const gain=inv.current-inv.invested,isLoss=inv.current<inv.invested,cat=inv.category||'Altro';
-        const target=inv.target?parseFloat(inv.target):null;
-        const pct=target?Math.min(100,(inv.current/target*100)).toFixed(1):null;
-        let targetCell='-';
-        if(target) targetCell=`<div>${fmt(target)}</div><div class="progress-wrap"><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div><div class="progress-label">${pct}%</div></div>`;
         const lm=inv.lastModified?`<span class="last-modified">✏️ ${fmtDate(inv.lastModified)}</span>`:'';
         const noteHtml=inv.note?`<span class="note-text" title="${inv.note}">💬 ${inv.note}</span>`:'';
         const idx=investments.indexOf(inv);
@@ -770,7 +764,6 @@ function renderInvestments(){
           ${investedCell}
           <td data-label="Valore Attuale">${fmt(inv.current)}</td>
           <td data-label="Guadagno/Perdita">${gainHtml(gain,investedShown)}</td>
-          <td data-label="Obiettivo">${targetCell}</td>
           ${azioniCell}</tr>`;
       });
     renderCatSummary();
@@ -998,6 +991,7 @@ function checkGoalNotifications(){
 }
 
 // ── CALCOLATRICE INLINE ─────────────────────────────────────────────────────────
+const calcState={};
 function initCalculators(){
     ['invested','current'].forEach(id=>{
         const panel=document.getElementById('calc-'+id);
@@ -1006,28 +1000,35 @@ function initCalculators(){
         let buf='',hasRes=false;
         const disp=document.createElement('div'); disp.className='calc-display'; disp.textContent='0';
         const btns=document.createElement('div'); btns.className='calc-buttons';
+        function pressKey(k){
+            if(k==='C'){ buf=''; disp.textContent='0'; hasRes=false; }
+            else if(k==='⌫'){ buf=buf.slice(0,-1); disp.textContent=buf||'0'; }
+            else if(k==='='||k==='Enter'){
+                try{
+                    const e=buf.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-');
+                    if(!e) return;
+                    const r=Function('"use strict";return ('+e+')')();
+                    if(!isFinite(r)) throw Error();
+                    input.value=Math.round(r*100)/100;
+                    input.dispatchEvent(new Event('input',{bubbles:true}));
+                    buf=r.toString(); disp.textContent=buf; hasRes=true;
+                } catch(e){ disp.textContent='⚠️'; setTimeout(()=>disp.textContent=buf||'0',800); }
+            }
+            else if(['+','−','×','÷','-','*','/'].includes(k)){
+                const op=['-','*','/'].includes(k)?({'-':'−','*':'×','/':'÷'})[k]:k;
+                buf+=op; disp.textContent=buf; hasRes=false;
+            }
+            else if(/^[0-9.]$/.test(k)){
+                if(hasRes){ buf=k==='.'?'0.':k; hasRes=false; } else buf+=k; disp.textContent=buf;
+            }
+        }
         'C,⌫,÷,×,7,8,9,−,4,5,6,+,1,2,3,=,0,.'.split(',').forEach(k=>{
             const b=document.createElement('button'); b.type='button'; b.textContent=k; b.className='calc-btn';
-            b.onclick=()=>{
-                if(k==='C'){ buf=''; disp.textContent='0'; hasRes=false; }
-                else if(k==='⌫'){ buf=buf.slice(0,-1); disp.textContent=buf||'0'; }
-                else if(k==='='){
-                    try{
-                        const e=buf.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-');
-                        if(!e) return;
-                        const r=Function('"use strict";return ('+e+')')();
-                        if(!isFinite(r)) throw Error();
-                        input.value=Math.round(r*100)/100;
-                        input.dispatchEvent(new Event('input',{bubbles:true}));
-                        buf=r.toString(); disp.textContent=buf; hasRes=true;
-                    } catch(e){ disp.textContent='⚠️'; setTimeout(()=>disp.textContent=buf||'0',800); }
-                }
-                else if(['+','−','×','÷'].includes(k)){ buf+=k; disp.textContent=buf; hasRes=false; }
-                else{ if(hasRes){ buf=k==='.'?'0.':k; hasRes=false; } else buf+=k; disp.textContent=buf; }
-            };
+            b.onclick=()=>pressKey(k);
             btns.appendChild(b);
         });
         panel.innerHTML=''; panel.appendChild(disp); panel.appendChild(btns);
+        calcState[id]={disp,input,pressKey,panel};
     });
 }
 
@@ -1036,8 +1037,35 @@ function toggleCalc(id){
     if(!p) return;
     const vis=p.style.display!=='none';
     document.querySelectorAll('.calc-panel').forEach(el=>el.style.display='none');
-    p.style.display=vis?'none':'grid';
+    if(!vis){
+        p.style.display='grid';
+        const st=calcState[id];
+        if(st){
+            const val=document.getElementById(id)?.value;
+            if(val&&val!=='0'){
+                st.input.value=val;
+            }
+            st.disp.textContent=val||'0';
+        }
+    }
 }
+
+document.addEventListener('keydown',function(e){
+    const active=Object.entries(calcState).find(([_,st])=>st.panel.style.display!=='none');
+    if(!active) return;
+    const [id,st]=active;
+    const tag=document.activeElement?.tagName;
+    if(tag==='INPUT'||tag==='TEXTAREA') return;
+    const k=e.key;
+    if(/^[0-9.]$/.test(k)){ e.preventDefault(); st.pressKey(k); }
+    else if(k==='+'){ e.preventDefault(); st.pressKey('+'); }
+    else if(k==='-'){ e.preventDefault(); st.pressKey('−'); }
+    else if(k==='*'){ e.preventDefault(); st.pressKey('×'); }
+    else if(k==='/'){ e.preventDefault(); st.pressKey('÷'); }
+    else if(k==='Enter'||k==='='){ e.preventDefault(); st.pressKey('='); }
+    else if(k==='Backspace'){ e.preventDefault(); st.pressKey('⌫'); }
+    else if(k==='Escape'||k==='Delete'){ e.preventDefault(); st.pressKey('C'); }
+});
 
 function toggleAutoFields(){
     const checked=document.getElementById('autoUpdateToggle').checked;
@@ -1104,7 +1132,7 @@ function initSortable(){ Sortable.create(document.getElementById('widgets-area')
 
 function openModal(type){
     if(IS_READONLY) return;
-    document.querySelectorAll('.calc-panel').forEach(p=>p.style.display='none'); document.getElementById('investmentForm').reset(); document.getElementById('editIndex').value=''; document.getElementById('editType').value=type; document.getElementById('companyGroup').style.display=type==='pensione'?'block':'none'; document.getElementById('categoryGroup').style.display=type==='pensione'?'none':'block'; document.getElementById('targetGroup').style.display=type==='pensione'?'none':'block'; document.getElementById('modalTitle').textContent=type==='pensione'?'Aggiungi Fondo Pensione':'Aggiungi Investimento'; toggleAutoFields(); document.getElementById('modal').style.display='flex';
+    document.querySelectorAll('.calc-panel').forEach(p=>p.style.display='none'); document.getElementById('investmentForm').reset(); document.getElementById('editIndex').value=''; document.getElementById('editType').value=type; document.getElementById('companyGroup').style.display=type==='pensione'?'block':'none'; document.getElementById('categoryGroup').style.display=type==='pensione'?'none':'block'; document.getElementById('modalTitle').textContent=type==='pensione'?'Aggiungi Fondo Pensione':'Aggiungi Investimento'; toggleAutoFields(); document.getElementById('modal').style.display='flex';
 }
 function closeModal(){ document.getElementById('modal').style.display='none'; }
 function editItem(type,index){
@@ -1113,9 +1141,9 @@ function editItem(type,index){
     const item=type==='investimenti'?investments[index]:pensions[index];
     document.getElementById('editIndex').value=index; document.getElementById('editType').value=type;
     document.getElementById('name').value=item.name; document.getElementById('invested').value=item.invested; document.getElementById('current').value=item.current;
-    document.getElementById('companyGroup').style.display=type==='pensione'?'block':'none'; document.getElementById('categoryGroup').style.display=type==='pensione'?'none':'block'; document.getElementById('targetGroup').style.display=type==='pensione'?'none':'block';
+    document.getElementById('companyGroup').style.display=type==='pensione'?'block':'none'; document.getElementById('categoryGroup').style.display=type==='pensione'?'none':'block';
     if(type==='pensione') document.getElementById('company').value=item.company||0;
-    if(type==='investimenti'){ document.getElementById('category').value=item.category||'Altro'; document.getElementById('target').value=item.target||''; }
+    if(type==='investimenti'){ document.getElementById('category').value=item.category||'Altro'; }
     document.getElementById('noteInput').value=item.note||'';
     const pas=item.autoUpdates||(item.autoUpdate?[item.autoUpdate]:null);
     document.getElementById('autoUpdateToggle').checked=!!(pas&&pas.length>0);
@@ -1132,7 +1160,7 @@ document.getElementById('investmentForm').addEventListener('submit',function(e){
     const editIndex=document.getElementById('editIndex').value,type=document.getElementById('editType').value;
     const newCurrent=parseFloat(document.getElementById('current').value);
     const item={ name:document.getElementById('name').value, invested:parseFloat(document.getElementById('invested').value), current:newCurrent, lastModified:new Date().toISOString(), note:document.getElementById('noteInput').value.trim()||undefined };
-    if(type==='investimenti'){ item.category=document.getElementById('category').value; const t=parseFloat(document.getElementById('target').value); if(!isNaN(t)&&t>0)item.target=t; }
+    if(type==='investimenti'){ item.category=document.getElementById('category').value; }
     if(type==='pensione') item.company=parseFloat(document.getElementById('company').value)||0;
     if(document.getElementById('autoUpdateToggle').checked){
         const entries=readPacEntries();
