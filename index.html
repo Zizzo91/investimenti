@@ -1176,7 +1176,9 @@ function resetLayout(){ localStorage.removeItem(LAYOUT_KEY); localStorage.remove
 function initSortable(){ Sortable.create(document.getElementById('widgets-area'),{ handle:'.widget-header',animation:200,ghostClass:'sortable-ghost',chosenClass:'sortable-chosen',dragClass:'sortable-drag',onEnd:()=>{ saveLayout(); renderCharts(); } }); }
 
 // ── COLONNE RIDIMENSIONABILI ──────────────────────────────────────────────
-const COL_WIDTH_KEY_INV='investimenti_col_widths_tableInv', COL_WIDTH_KEY_PEN='investimenti_col_widths_tablePen';
+const COL_WIDTH_KEY_INV='investimenti_col_widths_tableInv_v2', COL_WIDTH_KEY_PEN='investimenti_col_widths_tablePen';
+// pulizia larghezze salvate col vecchio layout (cat. come colonna) che ora disallineerebbero le colonne
+try{ localStorage.removeItem('investimenti_col_widths_tableInv'); }catch(e){}
 function initColResize(tableId, storageKey){
   const table=document.getElementById(tableId);
   if(!table) return;
