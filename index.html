@@ -432,7 +432,7 @@ button { padding:11px 22px; border:none; border-radius:8px; font-size:15px; font
         <div class="summary-cards">
             <div class="card"><h3>Totale Investito</h3><div class="amount" id="totalInvested">€0,00</div></div>
             <div class="card"><h3>Valore Attuale</h3><div class="amount" id="currentValue">€0,00</div></div>
-            <div class="card"><h3>Guadagno/Perdita</h3><div class="amount" id="totalGain">€0,00</div><div class="sub" id="totalGainPct"></div></div>
+            <div class="card"><h3>Guadagno/Perdita</h3><div class="amount" id="totalGain">€0,00</div><div class="sub" id="totalGainPct"></div><div class="sub" id="totalGainEff"></div></div>
             <div class="card" style="background:linear-gradient(135deg,#0369a1 0%,#0ea5e9 100%)"><h3>N° Investimenti</h3><div class="amount" id="countInv">0</div><div class="sub" id="countLoss"></div></div>
             <div class="card" style="background:linear-gradient(135deg,#7c3aed 0%,#a78bfa 100%)"><h3>💼 Patrimonio Pensionistico</h3><div class="amount" id="totalPension">€0,00</div><div class="sub" id="totalPensionSub"></div></div>
         </div>
@@ -513,10 +513,10 @@ button { padding:11px 22px; border:none; border-radius:8px; font-size:15px; font
                         <thead><tr>
                             <th style="width:30px"></th>
                             <th onclick="sortTable('investimenti','name')">App/Sito <span class="sort-icon" id="sort-inv-name"></span></th>
-                            <th onclick="sortTable('investimenti','category')">Categoria <span class="sort-icon" id="sort-inv-category"></span></th>
                             <th onclick="sortTable('investimenti','invested')">Investito <span class="sort-icon" id="sort-inv-invested"></span></th>
                             <th onclick="sortTable('investimenti','current')">Valore Attuale <span class="sort-icon" id="sort-inv-current"></span></th>
                             <th onclick="sortTable('investimenti','gain')">Guadagno/Perdita <span class="sort-icon" id="sort-inv-gain"></span></th>
+                            <th onclick="sortTable('investimenti','effectiveGain')">Guadagno Effettivo <span class="sort-icon" id="sort-inv-effectiveGain"></span></th>
                             <th id="thAzioniInv">Azioni</th>
                         </tr></thead>
                         <tbody id="investmentsBody"></tbody>
@@ -588,6 +588,7 @@ button { padding:11px 22px; border:none; border-radius:8px; font-size:15px; font
               </div>
               <div class="calc-panel" id="calc-invested"></div>
             </div>
+            <div class="form-group" id="savebackGroup"><label>Saveback (€) <small style="color:#999">opzionale</small></label><input type="number" id="saveback" step="0.01" value="0"></div>
             <div class="form-group"><label>Valore Attuale (€)</label>
               <div class="calc-field-wrap">
                 <input type="number" id="current" step="0.01" required>
@@ -737,8 +738,8 @@ function sortTable(type,field){
     sortState={}; sortState[key]=asc;
     const arr=type==='investimenti'?investments:pensions;
     arr.sort((a,b)=>{
-        let va=field==='gain'?(a.current-a.invested):field==='totalGain'?((a.current-a.invested)+(a.company||0)):(a[field]??'');
-        let vb=field==='gain'?(b.current-b.invested):field==='totalGain'?((b.current-b.invested)+(b.company||0)):(b[field]??'');
+        let va=field==='gain'?(a.current-a.invested):field==='effectiveGain'?((a.current-a.invested)-(a.saveback||0)):field==='totalGain'?((a.current-a.invested)+(a.company||0)):(a[field]??'');
+        let vb=field==='gain'?(b.current-b.invested):field==='effectiveGain'?((b.current-b.invested)-(b.saveback||0)):field==='totalGain'?((b.current-b.invested)+(b.company||0)):(b[field]??'');
         return typeof va==='string'?(asc?va.localeCompare(vb):vb.localeCompare(va)):(asc?va-vb:vb-va);
     });
     document.querySelectorAll('.sort-icon').forEach(el=>el.textContent='');
@@ -755,6 +756,9 @@ function updateSummary(){
     document.getElementById('currentValue').textContent=fmt(cv);
     document.getElementById('totalGain').textContent=fmt(tg);
     document.getElementById('totalGainPct').textContent=fmtPct(ti,cv);
+    const ts=investments.reduce((s,i)=>s+(i.saveback||0),0);
+    const teg=cv-ti-ts;
+    document.getElementById('totalGainEff').textContent=ts>0?`Effettivo ${teg>=0?'+':''}${fmt(teg)} (${fmtPct(ti+ts,cv)})`:'';
     document.getElementById('totalGain').className='amount '+(tg>0?'positive':tg<0?'negative':'neutral');
     document.getElementById('countInv').textContent=investments.length;
     document.getElementById('countLoss').textContent=lc>0?`⚠️ ${lc} in perdita`:'✅ Tutti positivi';
@@ -800,11 +804,11 @@ function renderInvestments(){
         const auBadge=activeAu.length?`<span class="auto-status" title="Aggiornamento automatico">${activeAu.map(intervalLabel).join(' · ')}</span>`:'';
         tbody.innerHTML+=`<tr data-inv-idx="${idx}">
           ${dragHandle}
-          <td data-label="App/Sito">${inv.name}${isLoss?'<span class="badge-loss">📉 perdita</span>':''}${auBadge}${lm}${noteHtml}</td>
-          <td data-label="Categoria"><span class="badge-cat">${cat}</span></td>
+          <td data-label="App/Sito">${inv.name}<span class="badge-cat">${cat}</span>${isLoss?'<span class="badge-loss">📉 perdita</span>':''}${auBadge}${lm}${noteHtml}</td>
           ${investedCell}
           <td data-label="Valore Attuale">${fmt(inv.current)}</td>
           <td data-label="Guadagno/Perdita">${gainHtml(gain,investedShown)}</td>
+          <td data-label="Guadagno Effettivo">${gainHtml(gain-(inv.saveback||0),investedShown+(inv.saveback||0))}</td>
           ${azioniCell}</tr>`;
       });
     renderCatSummary();
@@ -1245,7 +1249,7 @@ function clearColWidths(){
 
 function openModal(type){
     if(IS_READONLY) return;
-    document.querySelectorAll('.calc-panel').forEach(p=>p.style.display='none'); document.getElementById('investmentForm').reset(); document.getElementById('editIndex').value=''; document.getElementById('editType').value=type; document.getElementById('companyGroup').style.display=type==='pensione'?'block':'none'; document.getElementById('categoryGroup').style.display=type==='pensione'?'none':'block'; document.getElementById('modalTitle').textContent=type==='pensione'?'Aggiungi Fondo Pensione':'Aggiungi Investimento'; toggleAutoFields(); document.getElementById('modal').style.display='flex';
+    document.querySelectorAll('.calc-panel').forEach(p=>p.style.display='none'); document.getElementById('investmentForm').reset(); document.getElementById('editIndex').value=''; document.getElementById('editType').value=type; document.getElementById('companyGroup').style.display=type==='pensione'?'block':'none'; document.getElementById('categoryGroup').style.display=type==='pensione'?'none':'block'; document.getElementById('savebackGroup').style.display=type==='pensione'?'none':'block'; document.getElementById('modalTitle').textContent=type==='pensione'?'Aggiungi Fondo Pensione':'Aggiungi Investimento'; toggleAutoFields(); document.getElementById('modal').style.display='flex';
 }
 function closeModal(){ document.getElementById('modal').style.display='none'; }
 function editItem(type,index){
@@ -1254,9 +1258,9 @@ function editItem(type,index){
     const item=type==='investimenti'?investments[index]:pensions[index];
     document.getElementById('editIndex').value=index; document.getElementById('editType').value=type;
     document.getElementById('name').value=item.name; document.getElementById('invested').value=item.invested; document.getElementById('current').value=item.current;
-    document.getElementById('companyGroup').style.display=type==='pensione'?'block':'none'; document.getElementById('categoryGroup').style.display=type==='pensione'?'none':'block';
+    document.getElementById('companyGroup').style.display=type==='pensione'?'block':'none'; document.getElementById('categoryGroup').style.display=type==='pensione'?'none':'block'; document.getElementById('savebackGroup').style.display=type==='pensione'?'none':'block';
     if(type==='pensione') document.getElementById('company').value=item.company||0;
-    if(type==='investimenti'){ document.getElementById('category').value=item.category||'Altro'; }
+    if(type==='investimenti'){ document.getElementById('category').value=item.category||'Altro'; document.getElementById('saveback').value=item.saveback||0; }
     document.getElementById('noteInput').value=item.note||'';
     const pas=item.autoUpdates||(item.autoUpdate?[item.autoUpdate]:null);
     document.getElementById('autoUpdateToggle').checked=!!(pas&&pas.length>0);
@@ -1273,7 +1277,7 @@ document.getElementById('investmentForm').addEventListener('submit',function(e){
     const editIndex=document.getElementById('editIndex').value,type=document.getElementById('editType').value;
     const newCurrent=parseFloat(document.getElementById('current').value);
     const item={ name:document.getElementById('name').value, invested:parseFloat(document.getElementById('invested').value), current:newCurrent, lastModified:new Date().toISOString(), note:document.getElementById('noteInput').value.trim()||undefined };
-    if(type==='investimenti'){ item.category=document.getElementById('category').value; }
+    if(type==='investimenti'){ item.category=document.getElementById('category').value; item.saveback=parseFloat(document.getElementById('saveback').value)||0; }
     if(type==='pensione') item.company=parseFloat(document.getElementById('company').value)||0;
     if(document.getElementById('autoUpdateToggle').checked){
         const entries=readPacEntries();
@@ -1387,9 +1391,9 @@ function checkAndApplyAutoUpdates(){
 window.onclick=e=>{ if(e.target===document.getElementById('modal'))closeModal(); if(e.target===document.getElementById('modalLog'))closeLog(); };
 
 function exportCSV(){
-    let csv='Tipo,Nome,Categoria,Investito,Valore Attuale,Guadagno,Variazione %,Obiettivo,Note\n';
-    investments.forEach(i=>{ const g=i.current-i.invested,p=i.invested?((g/i.invested)*100).toFixed(2):'N/A'; csv+=`Investimento,"${i.name}","${i.category||'Altro'}",${i.invested},${i.current},${g},${p},${i.target||''},"${i.note||''}"\n`; });
-    pensions.forEach(p=>{ const g=p.current-p.invested,pc=p.invested?((g/p.invested)*100).toFixed(2):'N/A'; csv+=`Fondo Pensione,"${p.name}",,${p.invested},${p.current},${g},${pc},,"${p.note||''}"\n`; });
+    let csv='Tipo,Nome,Categoria,Investito,Saveback,Valore Attuale,Guadagno,Variazione %,Guadagno Effettivo,Variazione Effettiva %,Obiettivo,Note\n';
+    investments.forEach(i=>{ const g=i.current-i.invested,p=i.invested?((g/i.invested)*100).toFixed(2):'N/A',sb=i.saveback||0,eg=g-sb,eb=i.invested+sb,ep=eb?((eg/eb)*100).toFixed(2):'N/A'; csv+=`Investimento,"${i.name}","${i.category||'Altro'}",${i.invested},${sb},${i.current},${g},${p},${eg},${ep},${i.target||''},"${i.note||''}"\n`; });
+    pensions.forEach(p=>{ const g=p.current-p.invested,pc=p.invested?((g/p.invested)*100).toFixed(2):'N/A'; csv+=`Fondo Pensione,"${p.name}",,${p.invested},,${p.current},${g},${pc},,,,"${p.note||''}"\n`; });
     const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
     const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`investimenti-${new Date().toISOString().split('T')[0]}.csv`; a.click();
     showToast('📊 CSV esportato!','info');
