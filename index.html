@@ -148,6 +148,15 @@ table.resizable th { position:relative; }
 /* cella Azioni flessibile: allargando la colonna i bottoni vanno affiancati */
 td[data-label="Azioni"]{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
 @media(max-width:640px){ td[data-label="Azioni"]{ display:flex; justify-content:flex-end; } }
+/* — Tabelle: scroll verticale con header fisso + densità compatta (solo desktop) — */
+@media(min-width:641px){
+  .table-scroll{max-height:62vh;overflow:auto;}
+  .table-scroll thead th{position:sticky;top:0;z-index:5;box-shadow:0 1px 0 rgba(0,0,0,.15);}
+  body[data-density="compact"] .table-scroll td{padding:3px 8px;font-size:12px;}
+  body[data-density="compact"] .table-scroll th{padding:6px 8px;font-size:12px;}
+  body[data-density="compact"] .last-modified,body[data-density="compact"] .note-text{display:none;}
+  #densityBtn.active{background:#1a6dd8;color:white;border-color:#1a6dd8;}
+}
 
 .charts-row { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
 .charts-row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; }
@@ -191,6 +200,9 @@ th:hover { background:#155bb5; }
 th .sort-icon { margin-left:5px; opacity:.7; font-size:11px; }
 td { padding:11px 12px; border-bottom:1px solid #eee; }
 tr:hover { background:#f0f7ff; }
+/* numeri sempre allineati (cifre a larghezza fissa) + focus tastiera visibile */
+.amount,td,th,.sub{font-variant-numeric:tabular-nums;}
+button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid #1a6dd8;outline-offset:2px;}
 .positive { color:#10b981; font-weight:600; }
 .negative { color:#ef4444; font-weight:600; }
 .neutral { color:#6b7280; }
@@ -503,12 +515,14 @@ button { padding:11px 22px; border:none; border-radius:8px; font-size:15px; font
                                 <option value="Altro">Altro</option>
                             </select>
                             <input type="text" id="filterSearch" placeholder="🔍 Cerca..." oninput="renderAll()" style="width:120px">
+                            <button class="btn-secondary" id="densityBtn" onclick="toggleDensity()" title="Alterna righe compatte/normali">↕ Compatta</button>
                         </div>
                         <span class="drag-hint"><svg width="14" height="14" viewBox="0 0 24 24" fill="#888"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg> trascina</span>
                         <button class="collapse-btn" onclick="toggleWidget(this)">▲</button>
                     </div>
                 </div>
                 <div class="widget-body">
+                    <div class="table-scroll">
                     <table id="tableInv" class="resizable">
                         <thead><tr>
                             <th style="width:30px"></th>
@@ -521,6 +535,7 @@ button { padding:11px 22px; border:none; border-radius:8px; font-size:15px; font
                         </tr></thead>
                         <tbody id="investmentsBody"></tbody>
                     </table>
+                    </div>
                     <div class="cat-summary-box">
                         <h3>📂 Riepilogo per categoria <small style="color:#94a3b8;font-size:11px">(clicca per filtrare)</small></h3>
                         <table class="cat-table"><tbody id="catSummaryBody"></tbody></table>
@@ -537,6 +552,7 @@ button { padding:11px 22px; border:none; border-radius:8px; font-size:15px; font
                     </div>
                 </div>
                 <div class="widget-body">
+                    <div class="table-scroll">
                     <table id="tablePen" class="resizable">
                         <thead><tr>
                             <th style="width:30px"></th>
@@ -550,6 +566,7 @@ button { padding:11px 22px; border:none; border-radius:8px; font-size:15px; font
                         </tr></thead>
                         <tbody id="pensionBody"></tbody>
                     </table>
+                    </div>
                 </div>
             </div>
 
@@ -687,7 +704,20 @@ function applyDark(dark){
     Chart.defaults.borderColor=dark?'#334155':'rgba(0,0,0,0.1)';
 }
 function toggleDark(){ const d=document.documentElement.getAttribute('data-theme')==='dark'; applyDark(!d); renderCharts(); }
-(()=>{ if(localStorage.getItem(DARK_KEY)==='1') applyDark(true); })();
+(()=>{ const k=localStorage.getItem(DARK_KEY); if(k==='1') applyDark(true); else if(k===null&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches) applyDark(true); })();
+if(window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change',e=>{ if(localStorage.getItem(DARK_KEY)===null){ applyDark(e.matches); renderCharts(); } });
+const DENSITY_KEY='investimenti_density';
+function applyDensity(compact){
+    document.body.dataset.density=compact?'compact':'';
+    const b=document.getElementById('densityBtn');
+    if(b){ b.textContent=compact?'↕ Normale':'↕ Compatta'; b.classList.toggle('active',compact); }
+}
+function toggleDensity(){
+    const compact=document.body.dataset.density!=='compact';
+    applyDensity(compact);
+    try{ localStorage.setItem(DENSITY_KEY,compact?'1':'0'); }catch(e){}
+}
+(()=>{ try{ if(localStorage.getItem(DENSITY_KEY)==='1') applyDensity(true); }catch(e){} })();
 
 const fmt=n=>new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'}).format(n);
 const fmtShort=n=>new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n);
@@ -959,7 +989,19 @@ function renderCharts(){
         if(chartHistory) chartHistory.destroy();
         const datasets=[{label:'Valore totale',data:hv,borderColor:'#1a6dd8',backgroundColor:'rgba(26,109,216,.1)',fill:true,tension:.3,pointRadius:4}];
         if(hasInvested) datasets.push({label:'Investito',data:hi,borderColor:'#10b981',backgroundColor:'rgba(16,185,129,.08)',fill:false,tension:.3,pointRadius:3,borderDash:[6,4],spanGaps:true});
-        chartHistory=new Chart(document.getElementById('chartHistory'),{ type:'line', data:{labels:hl,datasets}, options:{responsive:true,plugins:{legend:{display:hasInvested,labels:{color:textColor,font:{size:11},usePointStyle:true}}},scales:{x:{ticks:{color:textColor}},y:{ticks:{color:textColor,callback:v=>'€'+v.toLocaleString('it-IT')},grid:{color:gridColor}}}} });
+        // curve guadagno: € (asse sx) e % (asse dx) + guadagno effettivo se ci sono saveback
+        const hg=hv.map((v,i)=>hi[i]!=null?parseFloat((v-hi[i]).toFixed(2)):null);
+        const hasGain=hasInvested&&hg.some(v=>v!=null);
+        if(hasGain){
+            const lastG=[...hg].reverse().find(v=>v!=null);
+            const gCol=(lastG||0)>=0?'#10b981':'#ef4444';
+            datasets.push({label:'Guadagno €',data:hg,borderColor:gCol,backgroundColor:gCol+'22',fill:false,tension:.3,pointRadius:0,borderWidth:2,yAxisID:'y'});
+            const hp=hv.map((v,i)=>hi[i]?parseFloat(((v-hi[i])/hi[i]*100).toFixed(2)):null);
+            datasets.push({label:'Guadagno %',data:hp,borderColor:'#a855f7',borderDash:[4,3],fill:false,tension:.3,pointRadius:0,borderWidth:2,yAxisID:'y1'});
+            const hs=history.map(h=>h.totalSaveback||0);
+            if(hs.some(v=>v>0)) datasets.push({label:'Guad. effettivo €',data:hg.map((g,i)=>g!=null?parseFloat((g-hs[i]).toFixed(2)):null),borderColor:'#f59e0b',borderDash:[2,2],fill:false,tension:.3,pointRadius:0,borderWidth:2,yAxisID:'y'});
+        }
+        chartHistory=new Chart(document.getElementById('chartHistory'),{ type:'line', data:{labels:hl,datasets}, options:{responsive:true,interaction:{mode:'index',intersect:false},plugins:{legend:{display:hasInvested||hasGain,labels:{color:textColor,font:{size:11},usePointStyle:true}}},scales:{x:{ticks:{color:textColor}},y:{ticks:{color:textColor,callback:v=>'€'+v.toLocaleString('it-IT')},grid:{color:gridColor}},...(hasGain?{y1:{position:'right',ticks:{color:textColor,callback:v=>v+'%'},grid:{drawOnChartArea:false}}}:{})}} });
     } else { if(chartHistory) chartHistory.destroy(); }
     if(!pensions.length) return;
     const pl=pensions.map(p=>p.name),pc=pensions.map((_,i)=>`hsl(${(i*120+190)%360},60%,52%)`);
@@ -1451,10 +1493,11 @@ async function loadStateFromCloud(){
 function ensureDailyHistory(){
     const tv=investments.reduce((s,i)=>s+i.current,0);
     const ti=investments.reduce((s,i)=>s+(parseFloat(i.invested)||0),0);
+    const ts=investments.reduce((s,i)=>s+(parseFloat(i.saveback)||0),0);
     const today=new Date().toISOString().split('T')[0];
     const lastSnap=history.length?history[history.length-1].date.split('T')[0]:null;
-    if(lastSnap!==today){ history.push({date:new Date().toISOString(),totalValue:parseFloat(tv.toFixed(2)),totalInvested:parseFloat(ti.toFixed(2))}); if(history.length>365)history.shift(); }
-    else if(history.length && history[history.length-1].totalInvested==null){ history[history.length-1].totalInvested=parseFloat(ti.toFixed(2)); }
+    if(lastSnap!==today){ history.push({date:new Date().toISOString(),totalValue:parseFloat(tv.toFixed(2)),totalInvested:parseFloat(ti.toFixed(2)),totalSaveback:parseFloat(ts.toFixed(2))}); if(history.length>365)history.shift(); }
+    else if(history.length&&(history[history.length-1].totalInvested==null||history[history.length-1].totalSaveback==null)){ history[history.length-1].totalInvested=parseFloat(ti.toFixed(2)); history[history.length-1].totalSaveback=parseFloat(ts.toFixed(2)); }
 }
 
 // Sincronizza la riga `state` su Supabase (upsert). Fire-and-forget con toast solo su errore.
