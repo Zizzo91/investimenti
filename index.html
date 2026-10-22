@@ -318,20 +318,38 @@ button { padding:11px 22px; border:none; border-radius:8px; font-size:15px; font
 /* Calculator inline */
 .calc-field-wrap { display:flex; gap:6px; align-items:stretch; }
 .calc-field-wrap input { flex:1; }
-.calc-toggle { padding:4px 10px; font-size:16px; background:#f0f7ff; border:1px solid #cbd5e1; border-radius:5px; cursor:pointer; transition:all .2s; line-height:1; }
-.calc-toggle:hover { background:#1a6dd8; color:white; border-color:#1a6dd8; }
+.calc-toggle { padding:6px 12px; font-size:17px; background:#eef6ff; border:1px solid #cbd5e1; border-radius:8px; cursor:pointer; transition:all .18s; line-height:1; }
+.calc-toggle:hover,.calc-toggle.active { background:#1a6dd8; color:white; border-color:#1a6dd8; transform:translateY(-1px); }
 [data-theme="dark"] .calc-toggle { background:#1e293b; border-color:#475569; }
-[data-theme="dark"] .calc-toggle:hover { background:#1a6dd8; }
-.calc-panel { display:none; margin-top:8px; background:#f8faff; border:1px solid #e2e8f0; border-radius:8px; padding:8px; }
-[data-theme="dark"] .calc-panel { background:#0f172a; border-color:#334155; }
-.calc-display { background:white; border:1px solid #ddd; border-radius:5px; padding:8px 10px; font-size:16px; font-weight:600; text-align:right; margin-bottom:6px; min-height:36px; overflow:hidden; font-family:monospace; }
+[data-theme="dark"] .calc-toggle:hover,[data-theme="dark"] .calc-toggle.active { background:#1a6dd8; }
+.calc-panel { display:none; margin-top:10px; background:#f8faff; border:1px solid #e2e8f0; border-radius:12px; padding:12px; box-shadow:0 6px 20px rgba(15,23,42,.08); animation:calcIn .16s ease; }
+[data-theme="dark"] .calc-panel { background:#0f172a; border-color:#334155; box-shadow:0 6px 20px rgba(0,0,0,.35); }
+@keyframes calcIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:none} }
+.calc-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+.calc-title { font-size:10.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:#64748b; }
+[data-theme="dark"] .calc-title { color:#94a3b8; }
+.calc-close { border:none; background:transparent; color:#94a3b8; font-size:15px; cursor:pointer; line-height:1; padding:2px 5px; border-radius:6px; }
+.calc-close:hover { color:#ef4444; background:#fef2f2; }
+.calc-display { background:white; border:1px solid #dbe3ec; border-radius:10px; padding:12px 14px; font-size:22px; font-weight:700; text-align:right; margin-bottom:10px; min-height:50px; overflow:hidden; font-variant-numeric:tabular-nums; white-space:nowrap; text-overflow:ellipsis; }
 [data-theme="dark"] .calc-display { background:#1e293b; border-color:#475569; color:#e2e8f0; }
-.calc-buttons { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; }
-.calc-btn { padding:8px 4px; font-size:14px; font-weight:600; text-align:center; background:white; border:1px solid #ddd; border-radius:5px; cursor:pointer; transition:all .1s; user-select:none; }
-.calc-btn:hover { background:#1a6dd8; color:white; border-color:#1a6dd8; }
-.calc-btn:active { transform:scale(.95); }
+.calc-buttons { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+.calc-btn { height:44px; padding:0; font-size:16px; font-weight:600; text-align:center; background:white; border:1px solid #e2e8f0; border-radius:9px; cursor:pointer; transition:all .1s; user-select:none; color:#1e293b; }
+.calc-btn:hover { background:#eef6ff; border-color:#1a6dd8; }
+.calc-btn:active { transform:scale(.96); }
+.calc-btn.op { background:#eef6ff; color:#1a6dd8; border-color:#dbeafe; }
+.calc-btn.op:hover { background:#1a6dd8; color:white; }
+.calc-btn.clear { background:#fef2f2; color:#ef4444; border-color:#fee2e2; }
+.calc-btn.clear:hover { background:#ef4444; color:white; }
+.calc-btn.back { background:#f8fafc; color:#64748b; }
+.calc-btn.eq { background:#10b981; color:white; border-color:#10b981; grid-row:span 2; }
+.calc-btn.eq:hover { background:#059669; }
+.calc-hint { margin-top:8px; font-size:10.5px; color:#94a3b8; text-align:center; }
 [data-theme="dark"] .calc-btn { background:#1e293b; border-color:#475569; color:#e2e8f0; }
-[data-theme="dark"] .calc-btn:hover { background:#1a6dd8; color:white; }
+[data-theme="dark"] .calc-btn:hover { background:#334155; border-color:#1a6dd8; }
+[data-theme="dark"] .calc-btn.op { background:#172554; color:#93c5fd; border-color:#1e3a8a; }
+[data-theme="dark"] .calc-btn.op:hover { background:#1a6dd8; color:white; }
+[data-theme="dark"] .calc-btn.clear { background:#450a0a; color:#fca5a5; border-color:#7f1d1d; }
+[data-theme="dark"] .calc-btn.eq { background:#059669; border-color:#059669; color:white; }
 .auto-separator { border-top:1px solid #dde1e6; padding-top:14px; margin-top:14px; }
 [data-theme="dark"] .auto-separator { border-top-color:#334155; }
 .pac-entry { background:#f8faff; border:1px solid #e2e8f0; border-radius:8px; padding:12px; margin-bottom:10px; }
@@ -600,15 +618,15 @@ button { padding:11px 22px; border:none; border-radius:8px; font-size:15px; font
             <div class="form-group"><label>Nome</label><input type="text" id="name" required></div>
             <div class="form-group"><label>Importo Versato (€)</label>
               <div class="calc-field-wrap">
-                <input type="number" id="invested" step="0.01" required>
+                <input type="text" inputmode="decimal" autocomplete="off" id="invested" class="amount-input" placeholder="0,00" required>
                 <button type="button" class="calc-toggle" onclick="toggleCalc('invested')" title="Calcolatrice">🧮</button>
               </div>
               <div class="calc-panel" id="calc-invested"></div>
             </div>
-            <div class="form-group" id="savebackGroup"><label>Saveback (€) <small style="color:#999">opzionale</small></label><input type="number" id="saveback" step="0.01" value="0"></div>
+            <div class="form-group" id="savebackGroup"><label>Saveback (€) <small style="color:#999">opzionale</small></label><input type="text" inputmode="decimal" autocomplete="off" id="saveback" class="amount-input" placeholder="0,00" value="0"></div>
             <div class="form-group"><label>Valore Attuale (€)</label>
               <div class="calc-field-wrap">
-                <input type="number" id="current" step="0.01" required>
+                <input type="text" inputmode="decimal" autocomplete="off" id="current" class="amount-input" placeholder="0,00" required>
                 <button type="button" class="calc-toggle" onclick="toggleCalc('current')" title="Calcolatrice">🧮</button>
               </div>
               <div class="calc-panel" id="calc-current"></div>
@@ -620,7 +638,7 @@ button { padding:11px 22px; border:none; border-radius:8px; font-size:15px; font
                     <option value="Obiettivo">Obiettivo</option>
                 </select>
             </div>
-            <div class="form-group" id="companyGroup" style="display:none"><label>Versato da Azienda (€)</label><input type="number" id="company" step="0.01" value="0"></div>
+            <div class="form-group" id="companyGroup" style="display:none"><label>Versato da Azienda (€)</label><input type="text" inputmode="decimal" autocomplete="off" id="company" class="amount-input" placeholder="0,00" value="0"></div>
             <div class="form-group"><label>Note <small style="color:#999">opzionale</small></label><textarea id="noteInput" placeholder="es. acquistato durante il crollo di marzo..."></textarea></div>
             <div class="form-group auto-separator">
               <label><input type="checkbox" id="autoUpdateToggle" onchange="toggleAutoFields()"> Aggiornamento automatico (PAC)</label>
@@ -1079,80 +1097,145 @@ function checkGoalNotifications(){
 
 // ── CALCOLATRICE INLINE ─────────────────────────────────────────────────────────
 const calcState={};
+// Converte un importo digitato (virgola e/o punto migliaia) in numero
+function toNum(v){
+    if(typeof v==='number') return isFinite(v)?v:0;
+    let s=String(v==null?'':v).trim().replace(/[€\s]/g,'');
+    if(!s) return 0;
+    if(s.includes('.')&&s.includes(',')) s=s.replace(/\./g,'').replace(',', '.');
+    else s=s.replace(',', '.');
+    s=s.replace(/[^0-9.\-]/g,'');
+    const n=parseFloat(s);
+    return isFinite(n)?n:0;
+}
+// Display: operatori leggibili + virgola decimale
+function fmtCalc(buf){
+    return String(buf||'0').replace(/\*/g,'×').replace(/\//g,'÷').replace(/-/g,'−').replace(/\./g,',');
+}
+// Numero → testo per input (virgola decimale)
+function inputNum(v){
+    return String(toNum(v)).replace('.',',');
+}
 function initCalculators(){
     ['invested','current'].forEach(id=>{
         const panel=document.getElementById('calc-'+id);
         const input=document.getElementById(id);
         if(!panel||!input) return;
-        let buf='',hasRes=false;
+        let buf='0',hasRes=false;
+        panel.innerHTML='';
+        const head=document.createElement('div'); head.className='calc-head';
+        const title=document.createElement('span'); title.className='calc-title';
+        title.textContent=id==='invested'?'Calcolatrice · Importo versato':'Calcolatrice · Valore attuale';
+        const close=document.createElement('button'); close.type='button'; close.className='calc-close'; close.textContent='✕'; close.title='Chiudi';
+        close.onclick=()=>toggleCalc(id);
+        head.appendChild(title); head.appendChild(close);
         const disp=document.createElement('div'); disp.className='calc-display'; disp.textContent='0';
         const btns=document.createElement('div'); btns.className='calc-buttons';
+        const hint=document.createElement('div'); hint.className='calc-hint'; hint.textContent='⌨️ tastiera · Invio = calcola · Esc = cancella';
+        panel.appendChild(head); panel.appendChild(disp); panel.appendChild(btns); panel.appendChild(hint);
+        function setDisp(){ disp.textContent=fmtCalc(buf); }
+        function reset(value){ buf=String(toNum(value)); hasRes=false; setDisp(); }
         function pressKey(k){
-            if(k==='C'){ buf=''; disp.textContent='0'; hasRes=false; }
-            else if(k==='⌫'){ buf=buf.slice(0,-1); disp.textContent=buf||'0'; }
-            else if(k==='='||k==='Enter'){
+            if(k==='C'){ buf='0'; hasRes=false; setDisp(); return; }
+            if(k==='⌫'){ buf=buf.length>1?buf.slice(0,-1):'0'; hasRes=false; setDisp(); return; }
+            if(k==='='||k==='Enter'){
                 try{
-                    const e=buf.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-');
-                    if(!e) return;
-                    const r=Function('"use strict";return ('+e+')')();
+                    const expr=buf.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-');
+                    if(!expr||expr==='0') return;
+                    if(!/^[-+*/.0-9]+$/.test(expr)) throw Error();
+                    const r=Function('"use strict";return ('+expr+')')();
                     if(!isFinite(r)) throw Error();
-                    input.value=Math.round(r*100)/100;
+                    const rounded=Math.round(r*100)/100;
+                    input.value=inputNum(rounded);
                     input.dispatchEvent(new Event('input',{bubbles:true}));
-                    buf=r.toString(); disp.textContent=buf; hasRes=true;
-                } catch(e){ disp.textContent='⚠️'; setTimeout(()=>disp.textContent=buf||'0',800); }
+                    buf=String(rounded); hasRes=true; setDisp();
+                }catch(err){ disp.textContent='⚠️'; const back=fmtCalc(buf); setTimeout(()=>disp.textContent=back,800); }
+                return;
             }
-            else if(['+','−','×','÷','-','*','/'].includes(k)){
-                const op=['-','*','/'].includes(k)?({'-':'−','*':'×','/':'÷'})[k]:k;
-                buf+=op; disp.textContent=buf; hasRes=false;
+            let key=k;
+            if(key===',') key='.';
+            if(key==='−') key='-';
+            if(key==='×') key='*';
+            if(key==='÷') key='/';
+            if(['+','-','*','/'].includes(key)){
+                if(/[+\-*/]$/.test(buf)) buf=buf.slice(0,-1);
+                buf+=key; hasRes=false; setDisp(); return;
             }
-            else if(/^[0-9.]$/.test(k)){
-                if(hasRes){ buf=k==='.'?'0.':k; hasRes=false; } else buf+=k; disp.textContent=buf;
+            if(key==='.'){
+                const last=buf.split(/[+\-*/]/).pop();
+                if(last.includes('.')) return;
+                if(hasRes){ buf='0.'; hasRes=false; }
+                else if(!last) buf+='0.';
+                else buf+='.';
+                setDisp(); return;
+            }
+            if(/^[0-9]$/.test(key)){
+                if(hasRes){ buf=key; hasRes=false; }
+                else{
+                    const last=buf.split(/[+\-*/]/).pop();
+                    if(last==='0') buf=buf.slice(0,-1)+key;
+                    else buf+=key;
+                }
+                setDisp(); return;
             }
         }
-        'C,⌫,÷,×,7,8,9,−,4,5,6,+,1,2,3,=,0,.'.split(',').forEach(k=>{
-            const b=document.createElement('button'); b.type='button'; b.textContent=k; b.className='calc-btn';
-            b.onclick=()=>pressKey(k);
+        [
+            ['C','clear'],['⌫','back'],['÷','op'],['×','op'],
+            ['7',''],['8',''],['9',''],['−','op'],
+            ['4',''],['5',''],['6',''],['+','op'],
+            ['1',''],['2',''],['3',''],['=','eq'],
+            ['0',''],[',',''],['.','']
+        ].forEach(([label,cls])=>{
+            const b=document.createElement('button'); b.type='button';
+            b.textContent=label; b.className='calc-btn'+(cls?' '+cls:''); b.dataset.key=label;
+            b.onclick=()=>pressKey(label);
             btns.appendChild(b);
         });
-        panel.innerHTML=''; panel.appendChild(disp); panel.appendChild(btns);
-        calcState[id]={disp,input,pressKey,panel};
+        calcState[id]={disp,input,pressKey,reset,panel,isOpen:()=>panel.style.display==='block'};
     });
 }
 
 function toggleCalc(id){
     const p=document.getElementById('calc-'+id);
     if(!p) return;
-    const vis=p.style.display!=='none';
+    const isOpen=p.style.display==='block';
     document.querySelectorAll('.calc-panel').forEach(el=>el.style.display='none');
-    if(!vis){
-        p.style.display='grid';
-        const st=calcState[id];
-        if(st){
-            const val=document.getElementById(id)?.value;
-            if(val&&val!=='0'){
-                st.input.value=val;
-            }
-            st.disp.textContent=val||'0';
-        }
-    }
+    document.querySelectorAll('.calc-toggle').forEach(b=>b.classList.remove('active'));
+    if(isOpen){ p.style.display='none'; return; }
+    p.style.display='block';
+    const st=calcState[id];
+    if(st) st.reset(st.input.value);
+    p.setAttribute('tabindex','-1');
+    try{ p.focus({preventScroll:true}); }catch(e){ p.focus(); }
+    document.querySelectorAll('.calc-toggle').forEach(b=>{ if(b.getAttribute('onclick')===`toggleCalc('${id}')`) b.classList.add('active'); });
 }
 
 document.addEventListener('keydown',function(e){
-    const active=Object.entries(calcState).find(([_,st])=>st.panel.style.display!=='none');
+    const active=Object.entries(calcState).find(([_,st])=>st.isOpen());
     if(!active) return;
     const [id,st]=active;
-    const tag=document.activeElement?.tagName;
-    if(tag==='INPUT'||tag==='TEXTAREA') return;
+    const el=document.activeElement;
+    const tag=el&&el.tagName;
+    // lascia digitare normalmente in campi diversi dal campo collegato (Nome, Note, ecc.)
+    if((tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT')&&(!el||el.id!==st.input.id)) return;
     const k=e.key;
-    if(/^[0-9.]$/.test(k)){ e.preventDefault(); st.pressKey(k); }
-    else if(k==='+'){ e.preventDefault(); st.pressKey('+'); }
-    else if(k==='-'){ e.preventDefault(); st.pressKey('−'); }
-    else if(k==='*'){ e.preventDefault(); st.pressKey('×'); }
-    else if(k==='/'){ e.preventDefault(); st.pressKey('÷'); }
-    else if(k==='Enter'||k==='='){ e.preventDefault(); st.pressKey('='); }
-    else if(k==='Backspace'){ e.preventDefault(); st.pressKey('⌫'); }
-    else if(k==='Escape'||k==='Delete'){ e.preventDefault(); st.pressKey('C'); }
+    let mapped=null;
+    if(/^[0-9]$/.test(k)) mapped=k;
+    else if(k===','||k==='.') mapped=k;
+    else if(k==='+'||k==='-'||k==='*'||k==='/') mapped=k;
+    else if(k==='Enter'||k==='=') mapped='=';
+    else if(k==='Backspace') mapped='⌫';
+    else if(k==='Escape'||k==='Delete') mapped='C';
+    if(mapped!==null){ e.preventDefault(); e.stopPropagation(); st.pressKey(mapped); }
 });
+
+// Sanifica i campi importo: cifre, separatore decimale e segno meno
+document.addEventListener('input',function(e){
+    const el=e.target;
+    if(!el||!el.matches||!el.matches('input.amount-input,.pac-amount')) return;
+    const clean=el.value.replace(/[^0-9.,\-]/g,'');
+    if(clean!==el.value) el.value=clean;
+},true);
 
 function toggleAutoFields(){
     const checked=document.getElementById('autoUpdateToggle').checked;
@@ -1174,7 +1257,7 @@ function renderPacEntries(updates){
                 <option value="week"${!p.intervalUnit||p.intervalUnit==='week'?' selected':''}>Settimana/e</option>
                 <option value="month"${p.intervalUnit==='month'?' selected':''}>Mese/i</option>
             </select></div>
-            <div><label>Importo (€)</label><input type="number" class="pac-f pac-amount" step="0.01" min="0.01" value="${p.amount||10}"></div>
+            <div><label>Importo (€)</label><input type="text" inputmode="decimal" autocomplete="off" class="pac-f pac-amount" value="${p.amount||10}"></div>
         </div>
     </div>`).join('');
     c.querySelectorAll('.pac-remove').forEach(b=>{b.onclick=()=>{b.closest('.pac-entry').remove();c.querySelectorAll('.pac-entry strong').forEach((e,j)=>e.textContent=`PAC #${j+1}`);};});
@@ -1189,7 +1272,7 @@ function addPacEntry(){
         <div class="form-group pac-row">
             <div><label>Ogni</label><input type="number" class="pac-f pac-interval" min="1" value="1" style="text-align:center"></div>
             <div><label>Periodo</label><select class="pac-f pac-unit"><option value="day">Giorno/i</option><option value="week" selected>Settimana/e</option><option value="month">Mese/i</option></select></div>
-            <div><label>Importo (€)</label><input type="number" class="pac-f pac-amount" step="0.01" min="0.01" value="10"></div>
+            <div><label>Importo (€)</label><input type="text" inputmode="decimal" autocomplete="off" class="pac-f pac-amount" value="10"></div>
         </div>`;
     c.appendChild(d);
     d.querySelector('.pac-remove').onclick=()=>{d.remove();c.querySelectorAll('.pac-entry strong').forEach((e,j)=>e.textContent=`PAC #${j+1}`);};
@@ -1202,7 +1285,7 @@ function readPacEntries(){
         r.push({enabled:true,startDate:start||undefined,endDate:end||undefined,
             intervalValue:parseInt(el.querySelector('.pac-interval').value)||1,
             intervalUnit:el.querySelector('.pac-unit').value,
-            amount:parseFloat(el.querySelector('.pac-amount').value)||0,
+            amount:toNum(el.querySelector('.pac-amount').value),
             lastApplied:el.dataset.last||undefined});
     });
     return r;
@@ -1301,10 +1384,10 @@ function editItem(type,index){
     document.querySelectorAll('.calc-panel').forEach(p=>p.style.display='none');
     const item=type==='investimenti'?investments[index]:pensions[index];
     document.getElementById('editIndex').value=index; document.getElementById('editType').value=type;
-    document.getElementById('name').value=item.name; document.getElementById('invested').value=item.invested; document.getElementById('current').value=item.current;
+    document.getElementById('name').value=item.name; document.getElementById('invested').value=inputNum(item.invested); document.getElementById('current').value=inputNum(item.current);
     document.getElementById('companyGroup').style.display=type==='pensione'?'block':'none'; document.getElementById('categoryGroup').style.display=type==='pensione'?'none':'block'; document.getElementById('savebackGroup').style.display=type==='pensione'?'none':'block';
-    if(type==='pensione') document.getElementById('company').value=item.company||0;
-    if(type==='investimenti'){ document.getElementById('category').value=item.category||'Altro'; document.getElementById('saveback').value=item.saveback||0; }
+    if(type==='pensione') document.getElementById('company').value=inputNum(item.company);
+    if(type==='investimenti'){ document.getElementById('category').value=item.category||'Altro'; document.getElementById('saveback').value=inputNum(item.saveback); }
     document.getElementById('noteInput').value=item.note||'';
     const pas=item.autoUpdates||(item.autoUpdate?[item.autoUpdate]:null);
     document.getElementById('autoUpdateToggle').checked=!!(pas&&pas.length>0);
@@ -1319,10 +1402,10 @@ document.getElementById('investmentForm').addEventListener('submit',function(e){
     if(IS_READONLY) return;
     e.preventDefault();
     const editIndex=document.getElementById('editIndex').value,type=document.getElementById('editType').value;
-    const newCurrent=parseFloat(document.getElementById('current').value);
-    const item={ name:document.getElementById('name').value, invested:parseFloat(document.getElementById('invested').value), current:newCurrent, lastModified:new Date().toISOString(), note:document.getElementById('noteInput').value.trim()||undefined };
-    if(type==='investimenti'){ item.category=document.getElementById('category').value; item.saveback=parseFloat(document.getElementById('saveback').value)||0; }
-    if(type==='pensione') item.company=parseFloat(document.getElementById('company').value)||0;
+    const newCurrent=toNum(document.getElementById('current').value);
+    const item={ name:document.getElementById('name').value, invested:toNum(document.getElementById('invested').value), current:newCurrent, lastModified:new Date().toISOString(), note:document.getElementById('noteInput').value.trim()||undefined };
+    if(type==='investimenti'){ item.category=document.getElementById('category').value; item.saveback=toNum(document.getElementById('saveback').value); }
+    if(type==='pensione') item.company=toNum(document.getElementById('company').value);
     if(document.getElementById('autoUpdateToggle').checked){
         const entries=readPacEntries();
         if(entries.length>0) item.autoUpdates=entries;
