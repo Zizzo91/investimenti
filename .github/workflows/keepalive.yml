@@ -17,7 +17,7 @@ jobs:
           fi
           echo "Ping schema public (gestione-conti):"
           curl -sS -o /dev/null -w "  keepalive HTTP %{http_code} (public/entries)\n" "${{ vars.SUPABASE_URL }}/rest/v1/entries?select=month&limit=1" -H "apikey: ${{ vars.SUPABASE_ANON_KEY }}"
-          echo "Ping schema investimenti:"
-          curl -sS -o /dev/null -w "  keepalive HTTP %{http_code} (investimenti/state)\n" "${{ vars.SUPABASE_URL }}/rest/v1/state?select=user_id&limit=1" -H "apikey: ${{ vars.SUPABASE_ANON_KEY }}" -H "Accept-Profile: investimenti"
+          echo "Ping public/state (investimenti tracker):"
+          curl -sS -o /dev/null -w "  keepalive HTTP %{http_code} (public/state)\n" "${{ vars.SUPABASE_URL }}/rest/v1/state?select=user_id&limit=1" -H "apikey: ${{ vars.SUPABASE_ANON_KEY }}" -H "Accept-Profile: public"
           echo "Ping schema media_stipendi:"
           curl -sS -o /dev/null -w "  keepalive HTTP %{http_code} (media_stipendi/state)\n" "${{ vars.SUPABASE_URL }}/rest/v1/state?select=user_id&limit=1" -H "apikey: ${{ vars.SUPABASE_ANON_KEY }}" -H "Accept-Profile: media_stipendi"
