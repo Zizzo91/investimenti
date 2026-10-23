@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Carica i dati locali (investimenti.json) nella tabella `state` su Supabase
-(schema `investimenti`).
+(schema `public`).
 
 Uso (usa la service_role key SOLO qui, mai nel frontend):
   python3 script/seed_supabase.py path/to/supabase-secrets-investimenti.json
@@ -82,7 +82,7 @@ def main():
     print(f"user_id     : {user_id}")
 
     if args.skip_existing:
-        _, existing = request("GET", f"{svc_url}/rest/v1/state?user_id=eq.{user_id}&select=user_id", key, profile="investimenti")
+        _, existing = request("GET", f"{svc_url}/rest/v1/state?user_id=eq.{user_id}&select=user_id", key, profile="public")
         if existing:
             print("Riga state già presente: --skip-existing, nessuna sovrascrittura.")
             return
@@ -94,7 +94,7 @@ def main():
         "history": history,
         "last_update": last_update,
     }
-    status, _ = request("POST", f"{svc_url}/rest/v1/state", key, [row], prefer="resolution=merge-duplicates,return=minimal", profile="investimenti")
+    status, _ = request("POST", f"{svc_url}/rest/v1/state", key, [row], prefer="resolution=merge-duplicates,return=minimal", profile="public")
     print(f"seed {status} -> riga state upsertata.")
 
 

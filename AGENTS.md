@@ -32,9 +32,9 @@ investimenti-main/
 - **PIN ad ogni accesso**: la sessione NON è persistita (`auth.persistSession:false`) e non ci sono auto-login all'avvio. Ad ogni apertura (anche su un dispositivo già usato) viene richiesto il PIN; i dati si caricano solo dopo il login. Button "🚪 Esci" nella topbar per l'uscita.
 - Senza sessione valida l'app **non carica né renderizza** alcun dato cloud (schermata di login a schermo intero); il server rifiuta comunque le richieste anon (RLS).
 
-## Database (Supabase, progetto `gfglazxhxxplhoteaahr`, schema `investimenti`)
-- `profiles(id uuid PK → auth.users, email, created_at)` — creato via trigger `handle_new_user` al primo accesso (nel target schema `public`)
-- `investimenti.state(user_id uuid PK → auth.users, investments jsonb, pensions jsonb, history jsonb, last_update timestamptz, updated_at)` — **una riga per utente** in schema `investimenti` (query via SDK `.schema('investimenti')`)
+## Database (Supabase, progetto `gfglazxhxxplhoteaahr`, schema `public`)
+- `profiles(id uuid PK → auth.users, email, created_at)` — creato via trigger `handle_new_user` al primo accesso (schema `public`)
+- `public.state(user_id uuid PK → auth.users, investments jsonb, pensions jsonb, history jsonb, last_update timestamptz, updated_at)` — **una riga per utente** in schema `public` (query via SDK `.from('state')`)
 - RLS: solo ruolo `authenticated` legge/scrive la propria riga (`auth.uid()`); l'anon può leggere solo `state.user_id` (policy `using(false)`: 200 senza dati) per il keepalive
 - Salvataggi: ogni mutazione (form, drag righe, PAC) scrive su localStorage (cache/mirror) e fa upsert della propria riga `state` su Supabase via SDK
 
